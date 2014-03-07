@@ -5,99 +5,6 @@
 #define toInt toType<int>
 #endif
 
-template<class T1>
-std::string toStr(T1 t)
-{
-    std::stringstream ss;
-    ss<<t;
-    return ss.str();
-}
-
-template<class T1>
-T1 toType(std::string s)
-{
-    std::stringstream ss(s);
-    T1 i;
-    ss>>i;
-    return i;
-}
-
-inline std::string& ltrim(std::string& s)
-{
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-    return s;
-}
-
-inline std::string& rtrim(std::string& s)
-{
-    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-    return s;
-}
-
-inline std::string& trim(std::string &str)
-{
-    ltrim(rtrim(str));
-    return str;
-}
-
-inline std::string& mergeSpaces(std::string &str)
-{
-    trim(str);
-    std::string::iterator new_end=std::unique(str.begin(), str.end(), [](char lhs, char rhs)
-    {
-        return isspace(lhs) && isspace(rhs);
-    });
-    str.erase(new_end, str.end());
-    std::replace(str.begin(), str.end(), '\n', ' ');
-    return str;
-}
-
-void HTMLencode(std::string& data)
-{
-    std::string buffer;
-    buffer.reserve(data.size()+10);
-    for(size_t pos=0; pos!=data.size(); ++pos)
-    {
-        switch(data[pos])
-        {
-        case '&':
-            buffer.append("&amp;");
-            break;
-        case '\"':
-            buffer.append("&quot;");
-            break;
-        case '\'':
-            buffer.append("&apos;");
-            break;
-        case '<':
-            buffer.append("&lt;");
-            break;
-        case '>':
-            buffer.append("&gt;");
-            break;
-        case '\n':
-            buffer.append("<br>");
-            break;
-        default:
-            buffer.append(&data[pos], 1);
-            break;
-        }
-    }
-    data.swap(buffer);
-}
-
-void replaceAll(std::string& str, const std::string& from, const std::string& to)
-{
-    if(from.empty())
-        return;
-    size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos)
-    {
-        str.replace(start_pos, from.length(), to);
-        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-    }
-}
-
 void inputSender(std::string& input, HANDLE& g_hChildStd_IN_Wr)
 {
     DWORD dwWritten;
@@ -126,23 +33,6 @@ int runMultiple(T1 runType, int total, Args... args)
     while(total--)
         number+=runType(args...);
     return number;
-}
-
-std::vector<std::string> split(std::string original, std::string delimiter)
-{
-    std::vector<std::string> ret;
-    std::string component;
-    size_t lpos=0, pos=original.find(delimiter);
-    while(pos!=std::string::npos)
-    {
-        component=original.substr(lpos, pos-lpos);
-        ret.push_back(trim(component));
-        lpos=pos+delimiter.length();
-        pos=original.find(delimiter, lpos);
-    }
-    component=original.substr(lpos, pos-lpos);
-    ret.push_back(trim(component));
-    return ret;
 }
 
 std::string getName(std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>>& dict, int index)
