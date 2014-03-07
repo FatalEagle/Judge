@@ -1,0 +1,53 @@
+# depslib dependency file v1.0
+1389320900 source:c:\codingprojects\judge\main.cpp
+	"resource.h"
+
+1389064472 c:\codingprojects\judge\resource.h
+	"basicresource.h"
+	"timer.h"
+	"systemFunctions.h"
+	"judge.h"
+	"HTMLBuilder.h"
+
+1389389803 c:\codingprojects\judge\basicresource.h
+	<algorithm>
+	<cctype>
+	<chrono>
+	<cstring>
+	<ctime>
+	<fstream>
+	<functional>
+	<iomanip>
+	<iostream>
+	<iterator>
+	<list>
+	<locale>
+	<mutex>
+	<random>
+	<sstream>
+	<stack>
+	<string>
+	<thread>
+	<unordered_map>
+	<utility>
+	<vector>
+	<windows.h>
+	<wininet.h>
+	<psapi.h>
+
+1389277381 c:\codingprojects\judge\timer.h
+	"basicresource.h"
+
+1389304358 c:\codingprojects\judge\systemfunctions.h
+
+1393100796 c:\codingprojects\judge\judge.h
+	"basicresource.h"
+	"HTMLBuilder.h"
+
+1389034969 c:\codingprojects\judge\pipe.h
+	<windows.h>
+	<stdio.h>
+
+1389133138 c:\codingprojects\judge\htmlbuilder.h
+	"basicresource.h"
+
