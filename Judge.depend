@@ -1,15 +1,15 @@
 # depslib dependency file v1.0
-1389320900 source:c:\codingprojects\judge\main.cpp
+1394216968 source:c:\codingprojects\judge\main.cpp
 	"resource.h"
 
-1389064472 c:\codingprojects\judge\resource.h
+1394216803 c:\codingprojects\judge\resource.h
 	"basicresource.h"
 	"timer.h"
 	"systemFunctions.h"
 	"judge.h"
 	"HTMLBuilder.h"
 
-1389389803 c:\codingprojects\judge\basicresource.h
+1394218292 c:\codingprojects\judge\basicresource.h
 	<algorithm>
 	<cctype>
 	<chrono>
@@ -38,9 +38,12 @@
 1389277381 c:\codingprojects\judge\timer.h
 	"basicresource.h"
 
-1389304358 c:\codingprojects\judge\systemfunctions.h
+1394218095 c:\codingprojects\judge\systemfunctions.h
+	"basicresource.h"
+	"win_systemFunctions.h"
+	"nix_systemFunctions.h"
 
-1393100796 c:\codingprojects\judge\judge.h
+1394216249 c:\codingprojects\judge\judge.h
 	"basicresource.h"
 	"HTMLBuilder.h"
 
@@ -48,6 +51,20 @@
 	<windows.h>
 	<stdio.h>
 
-1389133138 c:\codingprojects\judge\htmlbuilder.h
+1394218259 c:\codingprojects\judge\htmlbuilder.h
 	"basicresource.h"
+
+1394217885 c:\codingprojects\judge\win_systemfunctions.h
+
+1394218267 source:c:\codingprojects\judge\judge.cpp
+	"resource.h"
+
+1394218125 source:c:\codingprojects\judge\systemfunctions.cpp
+	"resource.h"
+
+1394218135 source:c:\codingprojects\judge\win_systemfunctions.cpp
+	"resource.h"
+
+1394218322 source:c:\codingprojects\judge\basicresource.cpp
+	"resource.h"
 

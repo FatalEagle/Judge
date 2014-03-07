@@ -23,6 +23,39 @@ public:
     {
         close();
     }
+    static void HTMLencode(std::string& data)
+    {
+        std::string buffer;
+        buffer.reserve(data.size()+10);
+        for(size_t pos=0; pos!=data.size(); ++pos)
+        {
+            switch(data[pos])
+            {
+            case '&':
+                buffer.append("&amp;");
+                break;
+            case '\"':
+                buffer.append("&quot;");
+                break;
+            case '\'':
+                buffer.append("&apos;");
+                break;
+            case '<':
+                buffer.append("&lt;");
+                break;
+            case '>':
+                buffer.append("&gt;");
+                break;
+            case '\n':
+                buffer.append("<br>");
+                break;
+            default:
+                buffer.append(&data[pos], 1);
+                break;
+            }
+        }
+        data.swap(buffer);
+    }
     void open()
     {
         while(!empty() && pop()!="head");
@@ -74,37 +107,4 @@ public:
     }
 };
 
-void HTMLencode(std::string& data)
-{
-    std::string buffer;
-    buffer.reserve(data.size()+10);
-    for(size_t pos=0; pos!=data.size(); ++pos)
-    {
-        switch(data[pos])
-        {
-        case '&':
-            buffer.append("&amp;");
-            break;
-        case '\"':
-            buffer.append("&quot;");
-            break;
-        case '\'':
-            buffer.append("&apos;");
-            break;
-        case '<':
-            buffer.append("&lt;");
-            break;
-        case '>':
-            buffer.append("&gt;");
-            break;
-        case '\n':
-            buffer.append("<br>");
-            break;
-        default:
-            buffer.append(&data[pos], 1);
-            break;
-        }
-    }
-    data.swap(buffer);
-}
 #endif // HTMLBUILDER_H_INCLUDED

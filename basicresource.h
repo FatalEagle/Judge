@@ -40,6 +40,6 @@
 
 #define CONSOLE_WIDTH 80
 
-std::mt19937 DEFAULT_RNG;
+extern std::mt19937 DEFAULT_RNG;
 
 #endif // BASICRESOURCE_H_INCLUDED
