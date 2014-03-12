@@ -75,8 +75,7 @@ std::string Judge::getResult(HTMLBuilder& log,
         log<<"Test case "<<pnum<<":";
         log.pop();
         log<<"<br>";
-        timer timeprinter((std::string("test case ")+toStr(pnum)).c_str(), out);
-        auto starttime=std::chrono::high_resolution_clock::now();
+        accurate_timer processtimer((std::string("test case ")+toStr(pnum)).c_str(), out);
         if(!CreateProcess(executablename.c_str(),
                       cargs,
                       NULL,
@@ -93,7 +92,7 @@ std::string Judge::getResult(HTMLBuilder& log,
         }
         std::thread(inputSender, std::ref(input), std::ref(g_hChildStd_IN_Wr)).detach();
         std::thread memoryMonitorThread(memoryMonitor, std::ref(memorylock), std::ref(processInfo.hProcess), std::ref(memoryusage), std::ref(exitflag));
-        while(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-starttime).count()-timelimit<=1e-6)
+        while(std::chrono::duration_cast<std::chrono::milliseconds>(processtimer.refresh()).count()-timelimit<=1e-6)
         {
             memorylock.lock();
             if(memoryusage>memlimit)
@@ -108,10 +107,9 @@ std::string Judge::getResult(HTMLBuilder& log,
             else if(ret==WAIT_FAILED)
                 throw RuntimeError(out, GetLastError());
         }
-        timeprinter.stop();
+        processtimer.stop();
         exitflag=true;
-        auto timeusage=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-starttime).count();
-        if(!failure && timelimit-timeusage<=1e-6)
+        if(!failure && timelimit-std::chrono::duration_cast<std::chrono::milliseconds>(processtimer.elapsed).count()<=1e-6)
             failure=1;
         switch(failure)
         {
@@ -127,7 +125,7 @@ std::string Judge::getResult(HTMLBuilder& log,
         }
         default:
         {
-            log<<"Time  : "<<timeusage<<" ms<br>";
+            log<<"Time  : "<<std::chrono::duration_cast<std::chrono::milliseconds>(processtimer.elapsed).count()<<" ms<br>";
             break;
         }
         }

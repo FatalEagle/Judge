@@ -14,8 +14,7 @@ void memoryMonitor(std::mutex& mtx, HANDLE& process, SIZE_T& memoryusage, bool& 
     {
         GetProcessMemoryInfo(process, (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
         mtx.lock();
-        if(pmc.PrivateUsage>memoryusage)
-            memoryusage=pmc.PrivateUsage;
+        memoryusage=pmc.PeakPagefileUsage;
         mtx.unlock();
         Sleep(100);
     }
