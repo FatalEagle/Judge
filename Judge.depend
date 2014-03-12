@@ -9,7 +9,7 @@
 	"judge.h"
 	"HTMLBuilder.h"
 
-1394640343 c:\codingprojects\judge\basicresource.h
+1394645848 c:\codingprojects\judge\basicresource.h
 	<algorithm>
 	<cctype>
 	<chrono>
@@ -56,7 +56,7 @@
 
 1394634643 c:\codingprojects\judge\win_systemfunctions.h
 
-1394640077 source:c:\codingprojects\judge\judge.cpp
+1394645622 source:c:\codingprojects\judge\judge.cpp
 	"resource.h"
 
 1394636888 source:c:\codingprojects\judge\systemfunctions.cpp

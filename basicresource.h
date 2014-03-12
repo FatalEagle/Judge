@@ -29,11 +29,16 @@
 #endif // _WIN32
 
 //#define FTP_PHP
-
+/*
 #define FTP_USERNAME "placeholder"
 #define FTP_PASSWORD "placeholder"
 #define FTP_PREFIX "ftp://"
 #define FTP_DOMAIN "placeholder.placeholder"
+*/
+#define FTP_USERNAME "dmopc@dmci.me"
+#define FTP_PASSWORD "SecondTuesday!"
+#define FTP_PREFIX "ftp://"
+#define FTP_DOMAIN "dmci.me"
 
 #define FTP_RETRY 10
 #define FTP_RANDOM_CHARS 2
