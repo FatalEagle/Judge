@@ -1,17 +1,13 @@
 #include "resource.h"
 
-void inputSender(std::string& input,
-                 HANDLE& g_hChildStd_IN_Wr)
+void inputSender(std::string& input, HANDLE& g_hChildStd_IN_Wr)
 {
     DWORD dwWritten;
     WriteFile(g_hChildStd_IN_Wr, input.c_str(), input.length(), &dwWritten, NULL);
     CloseHandle(g_hChildStd_IN_Wr);
 }
 
-void memoryMonitor(std::mutex& mtx,
-                   HANDLE& process,
-                   SIZE_T& memoryusage,
-                   bool& exitflag)
+void memoryMonitor(std::mutex& mtx, HANDLE& process, SIZE_T& memoryusage, bool& exitflag)
 {
     PROCESS_MEMORY_COUNTERS_EX pmc;
     while(!exitflag)
@@ -23,125 +19,6 @@ void memoryMonitor(std::mutex& mtx,
         mtx.unlock();
         Sleep(100);
     }
-}
-
-std::string getName(std::vector<
-                                std::pair<
-                                          std::string,
-                                          std::unordered_map<std::string, std::string>
-                                          >
-                                >& dict,
-                    int index)
-{
-    return dict[index].first;
-}
-
-std::string getAttr(std::vector<
-                                std::pair<
-                                          std::string,
-                                          std::unordered_map<std::string, std::string>
-                                          >
-                                >& dict,
-                    int index,
-                    std::string key,
-                    std::string defaultvalue)
-{
-    auto it=dict[index].second.find(key);
-    if(it==dict[index].second.end())
-        return defaultvalue;
-    return it->second;
-}
-
-std::pair<
-          std::string,
-          std::string
-          >
-          getEvent(std::list<
-                               std::pair<
-                                         int,
-                                         std::pair<
-                                                   std::string,
-                                                   std::string
-                                                  >
-                                        >
-                              >& event,
-          int currentcase)
-{
-    if(!event.empty())
-    {
-        while(currentcase>event.front().first)
-            event.pop_front();
-        if(currentcase==event.front().first)
-        {
-            std::pair<std::string, std::string> ret=event.front().second;
-            event.pop_front();
-            return ret;
-        }
-    }
-    return make_pair(std::string(), std::string());
-}
-
-std::pair<
-          std::vector<
-                      std::pair<
-                                std::string,
-                                std::unordered_map<std::string, std::string>
-                                >
-                     >,
-          std::list<
-                    std::pair<
-                              int,
-                              std::pair<
-                                        std::string,
-                                        std::string
-                                       >
-                             >
-                   >
-         > parseData(std::string filename)
-{
-    std::vector<std::pair<std::string, std::unordered_map<std::string, std::string>>> dict;
-    std::list<std::pair<int, std::pair<std::string, std::string>>> event;
-    dict.push_back(make_pair(std::string(), std::unordered_map<std::string, std::string>()));
-    std::ifstream fin(filename);
-    std::string line;
-    while(fin.good())
-    {
-        std::getline(fin, line);
-        trim(line);
-        line=line.substr(0, line.find('#'));
-        if(!line.empty())
-        {
-            if(line[0]=='<' && line[line.length()-1]=='>')
-            {
-                size_t cpos=line.find(':');
-                std::string command;
-                if(cpos==std::string::npos)
-                {
-                    command=line.substr(1, line.length()-2);
-                    event.push_back(make_pair(static_cast<int>(dict.size()-1), make_pair(trim(command), std::string())));
-                }
-                else
-                {
-                    command=line.substr(1, cpos-1);
-                    std::string arguments=line.substr(cpos+1, line.length()-(cpos+2));
-                    event.push_back(make_pair(static_cast<int>(dict.size()-1), make_pair(trim(command), trim(arguments))));
-                }
-            }
-            else if(line[0]=='[' && line[line.length()-1]==']')
-                dict.push_back(make_pair(line.substr(1, line.length()-2), std::unordered_map<std::string, std::string>()));
-            else
-            {
-                size_t cpos=line.find(':');
-                if(cpos==std::string::npos)
-                    continue;
-                std::string variable=line.substr(0, cpos);
-                std::string value=line.substr(cpos+1, std::string::npos);
-                dict.back().second[trim(variable)]=trim(value);
-            }
-        }
-    }
-    fin.close();
-    return make_pair(dict, event);
 }
 
 DWORD uploadContent(std::string ftp_prefix,

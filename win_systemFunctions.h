@@ -5,59 +5,8 @@
 #define toInt toType<int>
 #endif
 
-void inputSender(std::string& input,
-                 HANDLE& g_hChildStd_IN_Wr);
-void memoryMonitor(std::mutex& mtx,
-                   HANDLE& process,
-                   SIZE_T& memoryusage,
-                   bool& exitflag);
-std::string getName(std::vector<
-                                std::pair<
-                                          std::string,
-                                          std::unordered_map<std::string, std::string>
-                                          >
-                                >& dict,
-                    int index);
-std::string getAttr(std::vector<
-                                std::pair<
-                                          std::string,
-                                          std::unordered_map<std::string, std::string>
-                                          >
-                                >& dict,
-                    int index,
-                    std::string key,
-                    std::string defaultvalue=std::string());
-std::pair<
-          std::string,
-          std::string
-          >
-          getEvent(std::list<
-                               std::pair<
-                                         int,
-                                         std::pair<
-                                                   std::string,
-                                                   std::string
-                                                  >
-                                        >
-                              >& event,
-          int currentcase);
-std::pair<
-          std::vector<
-                      std::pair<
-                                std::string,
-                                std::unordered_map<std::string, std::string>
-                                >
-                     >,
-          std::list<
-                    std::pair<
-                              int,
-                              std::pair<
-                                        std::string,
-                                        std::string
-                                       >
-                             >
-                   >
-         > parseData(std::string filename);
+void inputSender(std::string& input, HANDLE& g_hChildStd_IN_Wr);
+void memoryMonitor(std::mutex& mtx, HANDLE& process, SIZE_T& memoryusage, bool& exitflag);
 DWORD uploadContent(std::string ftp_prefix,
                     std::string domain,
                     std::string directory,

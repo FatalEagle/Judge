@@ -3,6 +3,17 @@
 
 #include "basicresource.h"
 
+typedef std::string name_t;
+typedef std::string key_t;
+typedef std::string value_t;
+typedef std::unordered_map<key_t, value_t> attributes_t;
+typedef std::pair<name_t,attributes_t> entry_t;
+typedef std::vector<entry_t> dictionary_t;
+typedef std::string arguments_t;
+typedef std::pair<name_t, arguments_t> event_t;
+typedef std::pair<int, event_t> queued_event_t;
+typedef std::list<queued_event_t> event_queue_t;
+
 template<class T1>
 std::string toStr(T1 t)
 {
@@ -35,6 +46,10 @@ std::string& trim(std::string &str);
 std::string& mergeSpaces(std::string &str);
 void replaceAll(std::string& str, const std::string& from, const std::string& to);
 std::vector<std::string> split(std::string original, std::string delimiter);
+name_t getName(dictionary_t& dict, int index);
+value_t getAttr(dictionary_t& dict, int index, key_t key, value_t defaultvalue);
+event_t getEvent(event_queue_t& event, int currentcase);
+std::pair<dictionary_t, event_queue_t> parseData(std::string filename);
 
 #ifdef _WIN32
 #include "win_systemFunctions.h"

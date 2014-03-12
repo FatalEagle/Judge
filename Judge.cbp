@@ -37,12 +37,16 @@
 			<Add library="C:\MinGW\i686-w64-mingw32\lib\libwininet.a" />
 		</Linker>
 		<Unit filename="HTMLBuilder.h" />
+		<Unit filename="basicresource.cpp" />
 		<Unit filename="basicresource.h" />
+		<Unit filename="judge.cpp" />
 		<Unit filename="judge.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="resource.h" />
+		<Unit filename="systemFunctions.cpp" />
 		<Unit filename="systemFunctions.h" />
 		<Unit filename="timer.h" />
+		<Unit filename="win_systemFunctions.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
