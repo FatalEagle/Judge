@@ -322,6 +322,104 @@ bool Judge::runPython(HTMLBuilder& log,
     return runtest(log, "C:"+runPath+"\\Python"+pythonVersion+"\\python.exe", "\"C:"+runPath+"\\Python"+pythonVersion+"\\python.exe\" \""+pythonFile+"\"", in, out, ans, timelimit, memlimit, pnum, runmode);
 }
 
+bool Judge::compile_cpp(std::string cpp_filename, std::string output_filename)
+{
+    const std::string gplusplus=std::string("\"C:")+runPath+std::string("\\g++.exe");
+    // setting the stack size is probably Windows only
+    const std::string arguments="-Wl,--stack,16777216 -std=c++11 -O2 -static";
+    enquote(cpp_filename);
+    enquote(output_filename);
+    return system(join(" ", gplusplus, cpp_filename, arguments, std::string("-o ")+output_filename).c_str())==0;
+}
+
+bool Judge::compile_java(std::string java_filename)
+{
+    const std::string javac="javac";
+    enquote(java_filename);
+    return system(join(" ", javac, java_filename).c_str())==0;
+}
+
+void Judge::finalize(HTMLBuilder& log, logoutputmode logmode, std::string logfilename, std::string problemCode, std::ostringstream& _logss, std::ofstream& _logfs)
+{
+    log.close();
+    // BUGFIX: Does not upload sometimes. Use SAVE_AND_UPLOAD until further notice.
+    if(logmode==logoutputmode::UPLOAD_TO_WEB)
+    {
+        std::string submissionID;
+        if(problemCode.empty())
+        {
+            out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
+            std::uniform_int_distribution<char> uniformDistribution('a', 'z');
+            for(int i=0; i<FTP_RANDOM_CHARS; i++)
+                submissionID+=uniformDistribution(DEFAULT_RNG);
+        }
+        else
+            submissionID+=problemCode;
+        out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
+        for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
+            out<<' ';
+        out<<submissionID<<std::endl<<std::endl;
+#ifdef FTP_PHP
+        std::string _out;
+        out<<"Upload success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/submit/write.php?subid="+submissionID+"&data="+_logss.str(), _out)<<std::endl;
+        out<<_out<<std::endl;
+#else
+        DWORD errorcode;
+        DWORD ierrorcode;
+        std::string errormessage;
+        int retry=FTP_RETRY+1;
+        DWORD bytesUploaded=0;
+        while(bytesUploaded==0 && retry>0)
+        {
+            bytesUploaded=uploadContent(FTP_PREFIX, FTP_DOMAIN, "public_html/DMOPC/submissions", FTP_USERNAME, FTP_PASSWORD, submissionID+".html", _logss.str(), errorcode, ierrorcode, errormessage);
+            out<<"Uploaded "<<bytesUploaded<<" bytes."<<std::endl;
+            out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
+            out<<"Error message:"<<std::endl<<errormessage<<std::endl;
+            retry--;
+            if(bytesUploaded==0 && retry>0)
+                out<<"Retrying..."<<std::endl<<std::endl;
+        }
+#endif
+    }
+    else if(logmode==logoutputmode::SAVE_TO_FILE)
+        _logfs.close();
+    else if(logmode==logoutputmode::SAVE_AND_UPLOAD)
+    {
+        _logfs.open(logfilename);
+        _logfs<<_logss.str();
+        _logfs.close();
+        std::string submissionID;
+        if(problemCode.empty())
+        {
+            out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
+            std::uniform_int_distribution<char> uniformDistribution('a', 'z');
+            for(int i=0; i<FTP_RANDOM_CHARS; i++)
+                submissionID+=uniformDistribution(DEFAULT_RNG);
+        }
+        else
+            submissionID+=problemCode;
+        out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
+        for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
+            out<<' ';
+        out<<submissionID<<std::endl<<std::endl;
+        DWORD errorcode;
+        DWORD ierrorcode;
+        std::string errormessage;
+        int retry=FTP_RETRY+1;
+        bool bSuccess=false;
+        while(!bSuccess && retry>0)
+        {
+            bSuccess=uploadFile(FTP_PREFIX, FTP_DOMAIN, FTP_USERNAME, FTP_PASSWORD, logfilename, "public_html/DMOPC/submissions/"+submissionID+".html", errorcode, ierrorcode, errormessage);
+            out<<"Upload success? "<<std::boolalpha<<bSuccess<<std::endl;
+            out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
+            out<<"Error message:"<<std::endl<<errormessage<<std::endl;
+            retry--;
+            if(!bSuccess && retry>0)
+                out<<"Retrying..."<<std::endl<<std::endl;
+        }
+    }
+}
+
 int Judge::run(std::string program,
                std::string problemName,
                std::string problemCode,
@@ -357,11 +455,11 @@ int Judge::run(std::string program,
         runmode=mode::SORT_OUTPUT;
     else
         return -0x3f3f3f3f;
-    int tlimit[num_problems+1];
-    SIZE_T mlimit[num_problems+1];
-    int pylimit[num_problems+1];
-    int qpoints[num_problems+1];
-    int batch[num_problems+2];
+    std::vector<int> tlimit(num_problems+1);
+    std::vector<SIZE_T> mlimit(num_problems+1);
+    std::vector<int> pylimit(num_problems+1);
+    std::vector<int> qpoints(num_problems+1);
+    std::vector<int> batch(num_problems+2);
     for(int i=0; i<=num_problems; i++)
     {
         testnames[i]=getName(dict, i+1);
@@ -405,7 +503,7 @@ int Judge::run(std::string program,
     {
         lang=language::CPP;
         runPath=getAttr(dict, 0, "c++ path");
-        if(system((std::string("\"C:")+runPath+std::string("\\g++.exe \"")+(programDirectory+programName+std::string(".cpp"))+std::string("\" -Wl,--stack,16777216 -std=c++11 -O2 -static -o \"")+programDirectory+programName+std::string(".exe\"")).c_str())!=0)
+        if(!compile_cpp((programDirectory+programName+std::string(".cpp")), programDirectory+programName+std::string(".exe")))
         {
             out<<"Compilation Error!"<<std::endl;
             log.push("div class=\"finalresult CE\"");
@@ -425,79 +523,7 @@ int Judge::run(std::string program,
                 log<<"Time submitted: "<<timestamp;
             log<<"<br>Problem name: "<<problemName<<"<br>Submission name: "<<program.substr(program.rfind('\\')+1);
             if(log_enabled)
-            {
-                log.close();
-                // BUGFIX: Does not upload sometimes. Use SAVE_AND_UPLOAD until further notice.
-                if(logmode==logoutputmode::UPLOAD_TO_WEB)
-                {
-                    std::string submissionID;
-                    if(problemCode.empty())
-                    {
-                        out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
-                        std::uniform_int_distribution<char> uniformDistribution('a', 'z');
-                        for(int i=0; i<FTP_RANDOM_CHARS; i++)
-                            submissionID+=uniformDistribution(DEFAULT_RNG);
-                    }
-                    else
-                        submissionID+=problemCode;
-                    out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
-                    for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
-                        out<<' ';
-                    out<<submissionID<<std::endl<<std::endl;
-                    DWORD errorcode;
-                    DWORD ierrorcode;
-                    std::string errormessage;
-                    int retry=FTP_RETRY+1;
-                    DWORD bytesUploaded=0;
-                    while(bytesUploaded==0 && retry>0)
-                    {
-                        bytesUploaded=uploadContent(FTP_PREFIX, FTP_DOMAIN, "public_html/DMOPC/submissions", FTP_USERNAME, FTP_PASSWORD, submissionID+".html", _logss.str(), errorcode, ierrorcode, errormessage);
-                        out<<"Uploaded "<<bytesUploaded<<" bytes."<<std::endl;
-                        out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
-                        out<<"Error message:"<<std::endl<<errormessage<<std::endl;
-                        retry--;
-                        if(bytesUploaded==0 && retry>0)
-                            out<<"Retrying..."<<std::endl<<std::endl;
-                    }
-                }
-                else if(logmode==logoutputmode::SAVE_TO_FILE)
-                    _logfs.close();
-                else if(logmode==logoutputmode::SAVE_AND_UPLOAD)
-                {
-                    _logfs.open(logfilename);
-                    _logfs<<_logss.str();
-                    _logfs.close();
-                    std::string submissionID;
-                    if(problemCode.empty())
-                    {
-                        out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
-                        std::uniform_int_distribution<char> uniformDistribution('a', 'z');
-                        for(int i=0; i<FTP_RANDOM_CHARS; i++)
-                            submissionID+=uniformDistribution(DEFAULT_RNG);
-                    }
-                    else
-                        submissionID+=problemCode;
-                    out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
-                    for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
-                        out<<' ';
-                    out<<submissionID<<std::endl<<std::endl;
-                    DWORD errorcode;
-                    DWORD ierrorcode;
-                    std::string errormessage;
-                    int retry=FTP_RETRY+1;
-                    bool bSuccess=false;
-                    while(!bSuccess && retry>0)
-                    {
-                        bSuccess=uploadFile(FTP_PREFIX, FTP_DOMAIN, FTP_USERNAME, FTP_PASSWORD, logfilename, "public_html/DMOPC/submissions/"+submissionID+".html", errorcode, ierrorcode, errormessage);
-                        out<<"Upload success? "<<std::boolalpha<<bSuccess<<std::endl;
-                        out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
-                        out<<"Error message:"<<std::endl<<errormessage<<std::endl;
-                        retry--;
-                        if(!bSuccess && retry>0)
-                            out<<"Retrying..."<<std::endl<<std::endl;
-                    }
-                }
-            }
+                finalize(log, logmode, logfilename, problemCode, _logss, _logfs);
             return 0;
         }
     }
@@ -505,8 +531,7 @@ int Judge::run(std::string program,
     {
         lang=language::JAVA;
         javaPath=getAttr(dict, 0, "java path");
-        std::string cargs=std::string(" \"")+programDirectory+programName+std::string(".java\"");
-        if(system(("javac "+cargs).c_str())!=0)
+        if(!compile_java(programDirectory+programName+std::string(".java")))
         {
             out<<"Compilation Error!"<<std::endl;
             log.push("div class=\"finalresult CE\"");
@@ -526,79 +551,7 @@ int Judge::run(std::string program,
                 log<<"Time submitted: "<<timestamp;
             log<<"<br>Problem name: "<<problemName<<"<br>Submission name: "<<program.substr(program.rfind('\\')+1);
             if(log_enabled)
-            {
-                log.close();
-                // BUGFIX: Does not upload sometimes. Use SAVE_AND_UPLOAD until further notice.
-                if(logmode==logoutputmode::UPLOAD_TO_WEB)
-                {
-                    std::string submissionID;
-                    if(problemCode.empty())
-                    {
-                        out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
-                        std::uniform_int_distribution<char> uniformDistribution('a', 'z');
-                        for(int i=0; i<FTP_RANDOM_CHARS; i++)
-                            submissionID+=uniformDistribution(DEFAULT_RNG);
-                    }
-                    else
-                        submissionID+=problemCode;
-                    out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
-                    for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
-                        out<<' ';
-                    out<<submissionID<<std::endl<<std::endl;
-                    DWORD errorcode;
-                    DWORD ierrorcode;
-                    std::string errormessage;
-                    int retry=FTP_RETRY+1;
-                    DWORD bytesUploaded=0;
-                    while(bytesUploaded==0 && retry>0)
-                    {
-                        bytesUploaded=uploadContent(FTP_PREFIX, FTP_DOMAIN, "public_html/DMOPC/submissions", FTP_USERNAME, FTP_PASSWORD, submissionID+".html", _logss.str(), errorcode, ierrorcode, errormessage);
-                        out<<"Uploaded "<<bytesUploaded<<" bytes."<<std::endl;
-                        out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
-                        out<<"Error message:"<<std::endl<<errormessage<<std::endl;
-                        retry--;
-                        if(bytesUploaded==0 && retry>0)
-                            out<<"Retrying..."<<std::endl<<std::endl;
-                    }
-                }
-                else if(logmode==logoutputmode::SAVE_TO_FILE)
-                    _logfs.close();
-                else if(logmode==logoutputmode::SAVE_AND_UPLOAD)
-                {
-                    _logfs.open(logfilename);
-                    _logfs<<_logss.str();
-                    _logfs.close();
-                    std::string submissionID;
-                    if(problemCode.empty())
-                    {
-                        out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
-                        std::uniform_int_distribution<char> uniformDistribution('a', 'z');
-                        for(int i=0; i<FTP_RANDOM_CHARS; i++)
-                            submissionID+=uniformDistribution(DEFAULT_RNG);
-                    }
-                    else
-                        submissionID+=problemCode;
-                    out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
-                    for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
-                        out<<' ';
-                    out<<submissionID<<std::endl<<std::endl;
-                    DWORD errorcode;
-                    DWORD ierrorcode;
-                    std::string errormessage;
-                    int retry=FTP_RETRY+1;
-                    bool bSuccess=false;
-                    while(!bSuccess && retry>0)
-                    {
-                        bSuccess=uploadFile(FTP_PREFIX, FTP_DOMAIN, FTP_USERNAME, FTP_PASSWORD, logfilename, "public_html/DMOPC/submissions/"+submissionID+".html", errorcode, ierrorcode, errormessage);
-                        out<<"Upload success? "<<std::boolalpha<<bSuccess<<std::endl;
-                        out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
-                        out<<"Error message:"<<std::endl<<errormessage<<std::endl;
-                        retry--;
-                        if(!bSuccess && retry>0)
-                            out<<"Retrying..."<<std::endl<<std::endl;
-                    }
-                }
-            }
+                finalize(log, logmode, logfilename, problemCode, _logss, _logfs);
             return 0;
         }
     }
@@ -695,84 +648,6 @@ int Judge::run(std::string program,
         log<<"Time submitted: "<<timestamp;
     log<<"<br>Problem name: "<<problemName<<"<br>Submission name: "<<program.substr(program.rfind('\\')+1);
     if(log_enabled)
-    {
-        log.close();
-        // BUGFIX: Does not upload sometimes. Use SAVE_AND_UPLOAD until further notice.
-        if(logmode==logoutputmode::UPLOAD_TO_WEB)
-        {
-            std::string submissionID;
-            if(problemCode.empty())
-            {
-                out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
-                std::uniform_int_distribution<char> uniformDistribution('a', 'z');
-                for(int i=0; i<FTP_RANDOM_CHARS; i++)
-                    submissionID+=uniformDistribution(DEFAULT_RNG);
-            }
-            else
-                submissionID+=problemCode;
-            out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
-            for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
-                out<<' ';
-            out<<submissionID<<std::endl<<std::endl;
-#ifdef FTP_PHP
-            std::string _out;
-            out<<"Upload success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/submit/write.php?subid="+submissionID+"&data="+_logss.str(), _out)<<std::endl;
-            out<<_out<<std::endl;
-#else
-            DWORD errorcode;
-            DWORD ierrorcode;
-            std::string errormessage;
-            int retry=FTP_RETRY+1;
-            DWORD bytesUploaded=0;
-            while(bytesUploaded==0 && retry>0)
-            {
-                bytesUploaded=uploadContent(FTP_PREFIX, FTP_DOMAIN, "public_html/DMOPC/submissions", FTP_USERNAME, FTP_PASSWORD, submissionID+".html", _logss.str(), errorcode, ierrorcode, errormessage);
-                out<<"Uploaded "<<bytesUploaded<<" bytes."<<std::endl;
-                out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
-                out<<"Error message:"<<std::endl<<errormessage<<std::endl;
-                retry--;
-                if(bytesUploaded==0 && retry>0)
-                    out<<"Retrying..."<<std::endl<<std::endl;
-            }
-#endif
-        }
-        else if(logmode==logoutputmode::SAVE_TO_FILE)
-            _logfs.close();
-        else if(logmode==logoutputmode::SAVE_AND_UPLOAD)
-        {
-            _logfs.open(logfilename);
-            _logfs<<_logss.str();
-            _logfs.close();
-            std::string submissionID;
-            if(problemCode.empty())
-            {
-                out<<"Request for submission number success? "<<std::boolalpha<<request("http://", FTP_DOMAIN, "DMOPC/next.php", submissionID)<<std::endl;
-                std::uniform_int_distribution<char> uniformDistribution('a', 'z');
-                for(int i=0; i<FTP_RANDOM_CHARS; i++)
-                    submissionID+=uniformDistribution(DEFAULT_RNG);
-            }
-            else
-                submissionID+=problemCode;
-            out<<std::endl<<"Your submission ID is:"<<std::endl<<std::endl;
-            for(int i=(CONSOLE_WIDTH-submissionID.length())/2; i>=0; i--)
-                out<<' ';
-            out<<submissionID<<std::endl<<std::endl;
-            DWORD errorcode;
-            DWORD ierrorcode;
-            std::string errormessage;
-            int retry=FTP_RETRY+1;
-            bool bSuccess=false;
-            while(!bSuccess && retry>0)
-            {
-                bSuccess=uploadFile(FTP_PREFIX, FTP_DOMAIN, FTP_USERNAME, FTP_PASSWORD, logfilename, "public_html/DMOPC/submissions/"+submissionID+".html", errorcode, ierrorcode, errormessage);
-                out<<"Upload success? "<<std::boolalpha<<bSuccess<<std::endl;
-                out<<"Returned with error code "<<errorcode<<" and Internet error code "<<ierrorcode<<std::endl;
-                out<<"Error message:"<<std::endl<<errormessage<<std::endl;
-                retry--;
-                if(!bSuccess && retry>0)
-                    out<<"Retrying..."<<std::endl<<std::endl;
-            }
-        }
-    }
+        finalize(log, logmode, logfilename, problemCode, _logss, _logfs);
     return points;
 }

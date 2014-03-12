@@ -148,6 +148,9 @@ public:
                    SIZE_T memlimit,
                    int pnum,
                    mode runmode);
+    bool compile_cpp(std::string cpp_filename, std::string output_filename);
+    bool compile_java(std::string java_filename);
+    void finalize(HTMLBuilder& log, logoutputmode logmode, std::string logfilename, std::string problemCode, std::ostringstream& _logss, std::ofstream& _logfs);
     int run(std::string program,
             std::string problemName,
             std::string problemCode,

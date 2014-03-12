@@ -1,5 +1,10 @@
 #include "resource.h"
 
+std::string join(std::string separator, std::string str)
+{
+    return str;
+}
+
 std::string& ltrim(std::string& s)
 {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -18,7 +23,7 @@ std::string& trim(std::string &str)
     return str;
 }
 
-std::string& mergeSpaces(std::string &str)
+std::string& mergeSpaces(std::string& str)
 {
     trim(str);
     std::string::iterator new_end=std::unique(str.begin(), str.end(), [](char lhs, char rhs)
@@ -27,6 +32,14 @@ std::string& mergeSpaces(std::string &str)
     });
     str.erase(new_end, str.end());
     std::replace(str.begin(), str.end(), '\n', ' ');
+    return str;
+}
+
+std::string& enquote(std::string& str)
+{
+    const std::string quote="\"";
+    str=quote+str;
+    str+=quote;
     return str;
 }
 

@@ -28,7 +28,7 @@
 #include <psapi.h>
 #endif // _WIN32
 
-#define FTP_PHP
+//#define FTP_PHP
 
 #define FTP_USERNAME "placeholder"
 #define FTP_PASSWORD "placeholder"

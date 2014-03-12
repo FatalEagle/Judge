@@ -31,6 +31,8 @@ T1 toType(std::string s)
     return i;
 }
 
+auto const toInt=&toType<int>;
+
 template<class T1, class... Args>
 int runMultiple(T1 runType, int total, Args... args)
 {
@@ -40,14 +42,25 @@ int runMultiple(T1 runType, int total, Args... args)
     return number;
 }
 
+std::string join(std::string separator, std::string str);
+
+template<class... Args>
+std::string join(std::string separator, std::string str, Args... args)
+{
+    if(sizeof...(args)==0)
+        return str;
+    return str+separator+join(separator, args...);
+}
+
 std::string& ltrim(std::string& s);
 std::string& rtrim(std::string& s);
 std::string& trim(std::string &str);
 std::string& mergeSpaces(std::string &str);
+std::string& enquote(std::string &str);
 void replaceAll(std::string& str, const std::string& from, const std::string& to);
 std::vector<std::string> split(std::string original, std::string delimiter);
 name_t getName(dictionary_t& dict, int index);
-value_t getAttr(dictionary_t& dict, int index, key_t key, value_t defaultvalue);
+value_t getAttr(dictionary_t& dict, int index, key_t key, value_t defaultvalue=value_t());
 event_t getEvent(event_queue_t& event, int currentcase);
 std::pair<dictionary_t, event_queue_t> parseData(std::string filename);
 
